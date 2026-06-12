@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>防灾害问答机器人 | Disaster Prevention Q&A Bot</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<style>
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-card: #1a1a28;
+  --bg-hover: #22223a;
+  --bg-input: #16162a;
+  --text-primary: #e8e8f0;
+  --text-secondary: #9898b0;
+  --text-muted: #686880;
+  --accent: #4a9eff;
+  --accent-hover: #6db3ff;
+  --accent-glow: rgba(74,158,255,0.15);
+  --danger: #ff4a6a;
+  --warning: #ffb84a;
+  --success: #4aff8a;
+  --border: #2a2a40;
+  --sidebar-width: 260px;
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height:100vh; overflow-x:hidden; }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+
+.app-container { display:flex; min-height:100vh; }
+
+/* Sidebar */
+.sidebar { width:var(--sidebar-width); background:var(--bg-secondary); border-right:1px solid var(--border); display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:100; transition:transform 0.3s ease; }
+.sidebar-header { padding:20px; border-bottom:1px solid var(--border); text-align:center; }
+.sidebar-logo { font-size:36px; margin-bottom:8px; }
+.sidebar-title { font-size:16px; font-weight:700; color:var(--text-primary); }
+.sidebar-subtitle { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.sidebar-nav { flex:1; padding:12px; overflow-y:auto; }
+.nav-section-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; padding:12px 12px 6px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--text-secondary); transition:all 0.2s; margin-bottom:2px; }
+.nav-item:hover { background:var(--bg-hover); color:var(--text-primary); }
+.nav-item.active { background:var(--accent-glow); color:var(--accent); font-weight:600; }
+.nav-icon { font-size:18px; width:24px; text-align:center; }
+.sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+.lang-toggle { display:flex; gap:4px; background:var(--bg-primary); border-radius:8px; padding:3px; }
+.lang-btn { flex:1; padding:8px; border:none; border-radius:6px; cursor:pointer; font-size:13px; background:transparent; color:var(--text-secondary); transition:all 0.2s; }
+.lang-btn.active { background:var(--accent); color:#fff; font-weight:600; }
+.lang-btn:hover:not(.active) { color:var(--text-primary); }
+
+/* Main */
+.main-content { flex:1; margin-left:var(--sidebar-width); display:flex; flex-direction:column; min-height:100vh; }
+.content-header { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; background:var(--bg-secondary); }
+.header-title { font-size:18px; font-weight:700; }
+.mobile-menu-btn { display:none; background:none; border:none; color:var(--text-primary); font-size:24px; cursor:pointer; }
+.content-body { flex:1; overflow-y:auto; }
+
+/* Sections */
+.section { display:none; padding:24px; height:100%; }
+.section.active { display:block; }
+
+/* Chat */
+.chat-container { display:flex; flex-direction:column; height:calc(100vh - 80px); max-width:900px; margin:0 auto; }
+.chat-messages { flex:1; overflow-y:auto; padding:16px 0; }
+.welcome-msg { text-align:center; padding:40px 20px; color:var(--text-secondary); }
+.welcome-icon { font-size:48px; margin-bottom:16px; }
+.welcome-title { font-size:20px; font-weight:700; color:var(--text-primary); margin-bottom:8px; }
+.welcome-desc { font-size:14px; line-height:1.6; max-width:500px; margin:0 auto; }
+
+.message { display:flex; gap:12px; margin-bottom:16px; animation:fadeIn 0.3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.message-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.message.bot .message-avatar { background:var(--accent-glow); }
+.message.user .message-avatar { background:rgba(255,180,74,0.15); }
+.message-content { background:var(--bg-card); border-radius:var(--radius); padding:14px 18px; line-height:1.7; font-size:14px; max-width:80%; }
+.message.user .message-content { background:var(--accent); color:#fff; }
+.message-content strong { color:var(--accent); }
+.message.user .message-content strong { color:#fff; text-decoration:underline; }
+
+.typing-indicator { display:flex; gap:4px; padding:4px 0; }
+.typing-dot { width:8px; height:8px; border-radius:50%; background:var(--text-muted); animation:typing 1.2s infinite; }
+.typing-dot:nth-child(2) { animation-delay:0.2s; }
+.typing-dot:nth-child(3) { animation-delay:0.4s; }
+@keyframes typing { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-6px);opacity:1} }
+
+.quick-actions { display:flex; flex-wrap:wrap; gap:8px; padding:8px 0; }
+.quick-action-btn { padding:8px 16px; border:1px solid var(--border); border-radius:20px; background:var(--bg-card); color:var(--text-secondary); cursor:pointer; font-size:13px; transition:all 0.2s; }
+.quick-action-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
+
+.chat-input-area { display:flex; gap:8px; padding:12px 0; }
+.chat-input { flex:1; padding:12px 16px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-input); color:var(--text-primary); font-size:14px; outline:none; transition:border-color 0.2s; min-height:46px; }
+.chat-input:focus { border-color:var(--accent); }
+.send-btn { padding:12px 24px; border:none; border-radius:var(--radius); background:var(--accent); color:#fff; font-size:14px; font-weight:600; cursor:pointer; transition:background 0.2s; white-space:nowrap; }
+.send-btn:hover { background:var(--accent-hover); }
+
+.disclaimer { font-size:11px; color:var(--text-muted); padding:8px 0; line-height:1.5; text-align:center; }
+
+/* Image Recognition */
+.image-upload-area { max-width:700px; margin:0 auto; }
+.upload-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:48px; text-align:center; cursor:pointer; transition:all 0.3s; }
+.upload-zone:hover, .upload-zone.dragover { border-color:var(--accent); background:var(--accent-glow); }
+.upload-icon { font-size:48px; margin-bottom:12px; }
+.upload-text { color:var(--text-secondary); font-size:14px; }
+.upload-hint { color:var(--text-muted); font-size:12px; margin-top:8px; }
+.image-preview { max-width:100%; max-height:300px; border-radius:var(--radius); margin:16px 0; display:none; }
+.image-loading { text-align:center; padding:24px; display:none; }
+.spinner { display:inline-block; width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.analysis-result { background:var(--bg-card); border-radius:var(--radius); padding:20px; margin-top:16px; display:none; }
+.analysis-title { font-size:16px; font-weight:700; margin-bottom:16px; color:var(--accent); }
+.analysis-section { margin-bottom:12px; }
+.analysis-label { font-size:12px; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }
+.analysis-text { font-size:14px; line-height:1.6; }
+.warning-level { display:inline-block; padding:4px 12px; border-radius:12px; font-size:12px; font-weight:600; }
+.warning-low { background:rgba(74,255,138,0.15); color:var(--success); }
+.warning-medium { background:rgba(255,184,74,0.15); color:var(--warning); }
+.warning-high { background:rgba(255,74,106,0.15); color:var(--danger); }
+
+/* Cases */
+.cases-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px; max-width:1200px; margin:0 auto; }
+.case-card { background:var(--bg-card); border-radius:var(--radius); padding:20px; border:1px solid var(--border); transition:border-color 0.2s; }
+.case-card:hover { border-color:var(--accent); }
+.case-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.case-year { font-size:12px; color:var(--accent); font-weight:600; }
+.case-title { font-size:15px; font-weight:700; margin-top:2px; }
+.case-magnitude { font-size:24px; font-weight:800; color:var(--danger); }
+.case-deaths { font-size:13px; color:var(--warning); margin-bottom:12px; }
+.case-section { margin-bottom:10px; }
+.case-section-title { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.case-text { font-size:13px; line-height:1.6; color:var(--text-secondary); }
+
+/* Precursors */
+.precursor-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px; max-width:1200px; margin:0 auto; }
+.precursor-card { background:var(--bg-card); border-radius:var(--radius); padding:20px; border:1px solid var(--border); }
+.precursor-card-title { font-size:16px; font-weight:700; margin-bottom:16px; color:var(--accent); }
+.precursor-item { display:flex; gap:10px; align-items:flex-start; margin-bottom:12px; }
+.precursor-item-name { font-size:13px; font-weight:600; }
+.precursor-item-desc { font-size:12px; color:var(--text-secondary); line-height:1.5; }
+
+/* Governance */
+.expert-qa-list { max-width:800px; margin:0 auto; }
+.expert-qa-item { background:var(--bg-card); border-radius:var(--radius); margin-bottom:8px; overflow:hidden; border:1px solid var(--border); }
+.expert-q { padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:600; transition:background 0.2s; }
+.expert-q:hover { background:var(--bg-hover); }
+.expert-q .arrow { transition:transform 0.3s; color:var(--accent); font-size:12px; }
+.expert-qa-item.open .expert-q .arrow { transform:rotate(90deg); }
+.expert-a { max-height:0; overflow:hidden; transition:max-height 0.3s ease; }
+.expert-qa-item.open .expert-a { max-height:600px; }
+.expert-a-text { padding:0 20px 16px; font-size:14px; line-height:1.7; color:var(--text-secondary); }
+
+/* Responsive */
+@media (max-width:768px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); }
+  .main-content { margin-left:0; }
+  .mobile-menu-btn { display:block; }
+  .cases-grid { grid-template-columns:1fr; }
+  .precursor-grid { grid-template-columns:1fr; }
+  .chat-container { height:calc(100vh - 120px); }
+  .overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99; }
+  .overlay.show { display:block; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">🛡️</div>
+      <div class="sidebar-title" id="sidebarTitle">防灾害问答机器人</div>
+      <div class="sidebar-subtitle" id="sidebarSubtitle">Disaster Prevention Q&amp;A Bot</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label" id="navMainLabel">主功能</div>
+      <div class="nav-item active" data-section="chat" onclick="switchSection('chat')">
+        <span class="nav-icon">💬</span>
+        <span id="navChat">智能问答</span>
+      </div>
+      <div class="nav-item" data-section="image" onclick="switchSection('image')">
+        <span class="nav-icon">📷</span>
+        <span id="navImage">图片识别</span>
+      </div>
+      <div class="nav-section-label" id="navExpertLabel">专家知识库</div>
+      <div class="nav-item" data-section="cases" onclick="switchSection('cases')">
+        <span class="nav-icon">📋</span>
+        <span id="navCases">地震案例</span>
+      </div>
+      <div class="nav-item" data-section="precursors" onclick="switchSection('precursors')">
+        <span class="nav-icon">🔍</span>
+        <span id="navPrecursors">地震前兆</span>
+      </div>
+      <div class="nav-item" data-section="governance" onclick="switchSection('governance')">
+        <span class="nav-icon">🏛️</span>
+        <span id="navGovernance">治理建议</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="lang-zh" onclick="switchLang('zh')">中文</button>
+        <button class="lang-btn" id="lang-en" onclick="switchLang('en')">English</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="content-header">
+      <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+      <h1 class="header-title" id="pageTitle">智能问答</h1>
+      <div style="font-size:12px;color:var(--text-muted)" id="poweredBy">Powered by Knowledge Base</div>
+    </header>
+
+    <div class="content-body">
+      <!-- Chat -->
+      <div class="section active" id="section-chat">
+        <div class="chat-container">
+          <div class="chat-messages" id="chatMessages">
+            <div class="welcome-msg" id="welcomeMsg">
+              <div class="welcome-icon">🛡️</div>
+              <div class="welcome-title" id="welcomeTitle">您好！我是防灾害问答机器人</div>
+              <div class="welcome-desc" id="welcomeDesc">我可以回答您关于地震前兆、应急避险、急救知识、防灾准备等方面的问题。请在下方输入您的问题，或点击快捷按钮获取帮助。</div>
+            </div>
+          </div>
+          <div class="quick-actions" id="quickActions"></div>
+          <div class="chat-input-area" id="chatInputArea">
+            <input type="text" class="chat-input" id="chatInput" autocomplete="off" placeholder="输入您的问题...">
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
+          </div>
+          <div class="disclaimer" id="disclaimer">⚠️ 免责声明：本系统信息仅供参考，不能替代专业地震监测机构。请以官方发布的信息为准。遇紧急情况请拨打：中国 119/120，国际 911/112。</div>
+        </div>
+      </div>
+
+      <!-- Image Recognition -->
+      <div class="section" id="section-image">
+        <div class="image-upload-area">
+          <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text" id="uploadText">点击或拖拽上传图片</div>
+            <div class="upload-hint" id="uploadHint">支持 JPG、PNG、WebP，最大 10MB</div>
+          </div>
+          <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+          <img class="image-preview" id="imagePreview" alt="Preview">
+          <div class="image-loading" id="imageLoading">
+            <div class="spinner"></div>
+            <div style="margin-top:12px;color:var(--text-secondary)" id="analyzingText">正在分析图片...</div>
+          </div>
+          <div class="analysis-result" id="analysisResult"></div>
+        </div>
+      </div>
+
+      <!-- Cases -->
+      <div class="section" id="section-cases">
+        <div class="cases-grid" id="casesGrid"></div>
+      </div>
+
+      <!-- Precursors -->
+      <div class="section" id="section-precursors">
+        <div class="precursor-grid" id="precursorGrid"></div>
+      </div>
+
+      <!-- Governance -->
+      <div class="section" id="section-governance">
+        <div class="expert-qa-list" id="governanceList"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ==================== DATA ====================
+
+var KNOWLEDGE_BASE = [
+  {
+    id: "precursor",
+    kw_zh: ["地震前兆","动物异常","前兆","预兆","征兆"],
+    kw_en: ["precursor","animal anomaly","sign","warning","predict"],
+    q_zh: "地震前有哪些前兆？",
+    q_en: "What are the precursors before an earthquake?",
+    a_zh: "地震前常见的前兆包括以下几类：\n\n【动物行为异常】\n- 家畜（牛马驴骡）：惊慌不安、不进厩、不进食、挣断缰绳逃跑\n- 猪：不吃食、乱拱乱撞、异常嚎叫\n- 家禽（鸡鸭鹅）：惊飞上树、不进窝、不下水、高声鸣叫\n- 宠物（猫狗）：狗狂叫不休、叼崽搬家；猫躲藏、炸毛\n- 穴居动物：老鼠白天成群出没不怕人；蛇冬眠期出洞\n- 水生动物：鱼成群跳出水面；青蛙大批上岸\n- 昆虫：蜜蜂不回巢、蚂蚁大规模迁移\n\n【天空特征】\n- 地震云：条带状、辐射状云（科学性有争议）\n- 地光：闪电式、片状、带状、球状光芒\n\n【气象特征】\n- 地下水异常：水位突升/突降、变浑/变色/变味\n- 地气异常：地面冒出异常雾气、硫磺味\n- 地声：地下传出闷雷声\n- 电磁异常：收音机/电视干扰、指南针偏转",
+    a_en: "Common earthquake precursors include:\n\n[Animal Behavior Anomalies]\n- Livestock: Panicked, refusing shelters/food, breaking halters\n- Pigs: Refusing food, ramming walls, abnormal squealing\n- Poultry: Flying to trees, refusing coops/water, loud calling\n- Pets: Dogs bark incessantly; cats hide, fur bristling\n- Burrowing animals: Rats appear in daytime; snakes emerge from hibernation\n- Aquatic animals: Fish jump out of water; frogs come ashore\n- Insects: Bees don't return to hives; ants migrate\n\n[Sky Features]\n- Earthquake clouds: Band-shaped, radial clouds (scientifically debated)\n- Earthquake lights: Lightning, sheet, band, ball shapes\n\n[Weather Features]\n- Groundwater anomalies: Sudden level rise/drop, turbidity changes\n- Ground gas: Abnormal fog/steam, sulfur smell\n- Earth sounds: Underground rumbling\n- Electromagnetic anomalies: Radio/TV interference, compass deflection"
+  },
+  {
+    id: "response",
+    kw_zh: ["地震来了","地震时","怎么办","应对","避险","躲避","逃生"],
+    kw_en: ["earthquake","what to do","during","response","shelter","escape"],
+    q_zh: "地震来了怎么办？",
+    q_en: "What to do when an earthquake strikes?",
+    a_zh: "黄金法则：伏地、遮挡、手抓牢（Drop, Cover, Hold On）\n\n伏地（Drop）：迅速双腿跪地，身体蜷缩俯下\n遮挡（Cover）：躲到坚固桌下，用双臂护住头颈\n抓牢（Hold On）：抓住桌腿直到摇晃停止\n\n各场景应对：\n- 家中：桌下避险，远离窗户玻璃，不用电梯\n- 高楼：躲内墙角或卫生间，震后走楼梯撤\n- 学校：钻课桌下，书包护头，听指挥撤离\n- 商场：柱子旁躲避，不冲向出口\n- 电梯：按所有楼层按钮，停后立即离开\n- 户外：跑到空旷地带，远离建筑电线杆\n- 车内：靠边停车，留车内直到震停\n\n震后注意事项：\n1. 检查伤情，简单急救\n2. 关闭煤气阀门和电源\n3. 走楼梯撤离，不乘电梯\n4. 到开阔地带集合\n5. 警惕余震",
+    a_en: "Golden Rule: Drop, Cover, Hold On\n\nDrop: Kneel quickly, curl body forward\nCover: Get under sturdy table, protect head/neck\nHold On: Grip table legs until shaking stops\n\nScenario-Specific Responses:\n- Home: Under table, away from windows, no elevators\n- High-rise: Interior corner/bathroom, stairs after shaking\n- School: Under desk, bag on head, follow instructions\n- Mall: Near pillars, don't rush exits\n- Elevator: Press all buttons, exit when stopped\n- Outdoors: Run to open area, away from buildings/poles\n- Vehicle: Pull over, stay in vehicle until shaking stops\n\nPost-Earthquake Actions:\n1. Check for injuries, provide basic first aid\n2. Turn off gas valve and power\n3. Evacuate via stairs, never elevators\n4. Move to open areas\n5. Be alert for aftershocks"
+  },
+  {
+    id: "preparation",
+    kw_zh: ["应急包","急救包","物资","准备","储备","应急物资"],
+    kw_en: ["emergency kit","supplies","prepare","preparation","stock","survival kit"],
+    q_zh: "如何准备家庭应急包？",
+    q_en: "How to prepare a family emergency kit?",
+    a_zh: "家庭应急包核心是保障灾后72小时独立生存，必须包含四大类物资：\n\n1. 生存保障类\n- 饮用水：每人每天3-4升，至少3天量\n- 食品：压缩饼干、罐头、能量棒等免烹饪高热量食品\n\n2. 医疗防护类\n- 急救箱：绷带、消毒药水、止血带、医用胶布\n- 常用药品：感冒药、止痛药、消炎药、慢性病药物\n- 口罩、手套、防护眼镜\n\n3. 通讯照明类\n- 手摇式/太阳能收音机\n- 手电筒（附备用电池）\n- 哨子（求救信号用）\n- 充电宝\n\n4. 工具与文件类\n- 多功能刀/工具钳\n- 绳索（至少10米）\n- 重要文件复印件\n- 少量现金\n\n提示：应急包放在易取处（门口、床头），每半年检查更新一次。",
+    a_en: "A family emergency kit must ensure 72-hour independent survival with four categories:\n\n1. Survival Supplies\n- Water: 3-4 liters per person per day, at least 3 days supply\n- Food: Compressed biscuits, canned food, energy bars\n\n2. Medical Protection\n- First aid kit: Bandages, antiseptic, tourniquet, medical tape\n- Medications: Cold medicine, painkillers, antibiotics\n- Masks, gloves, protective eyewear\n\n3. Communication and Lighting\n- Hand-crank/solar radio\n- Flashlight (with spare batteries)\n- Whistle (for rescue signals)\n- Power bank\n\n4. Tools and Documents\n- Multi-tool/knife\n- Rope (at least 10 meters)\n- Important document copies\n- Some cash\n\nTip: Store in an accessible location and inspect/update every 6 months."
+  },
+  {
+    id: "rescue",
+    kw_zh: ["救援","自救","互救","被困","压埋","救命"],
+    kw_en: ["rescue","self-rescue","trapped","buried","first aid","survive"],
+    q_zh: "被埋压后如何自救和互救？",
+    q_en: "How to self-rescue and help others when trapped?",
+    a_zh: "自救要点：\n1. 保护呼吸：用湿布捂住口鼻防灰尘（第一要务）\n2. 建立生存空间：小心移除杂物，用三角支撑原则移动障碍物\n3. 保存体力：减少活动和喊叫\n4. 科学呼救：敲击管道/墙壁发SOS信号（三短三长三短）\n5. 不点火：可能有燃气泄漏\n6. 维持生存：节约食物和水\n\n互救五先五后原则：\n1. 先近后远 - 不论谁，近处有人先救\n2. 先易后难 - 先救容易救出的人\n3. 先救生后处理死者\n4. 先救青壮年增强救援力量\n5. 注意保护支撑结构\n\n黄金72小时：\n- 24h内存活率 > 90%\n- 72h后存活率急剧下降\n- 但有超100小时获救案例",
+    a_en: "Self-Rescue Essentials:\n1. Protect breathing: Wet cloth over nose/mouth (first priority)\n2. Create survival space: Clear debris using triangle support principle\n3. Conserve energy: Minimize activity and shouting\n4. Signal scientifically: Tap pipes/walls with SOS rhythm\n5. No fire: Possible gas leak\n6. Sustain survival: Ration food and water\n\nMutual Rescue Five Priorities:\n1. Near before far\n2. Easy before difficult\n3. Living before deceased\n4. Able-bodied to strengthen rescue\n5. Protect support structures\n\nGolden 72 Hours:\n- Survival rate > 90% within 24h\n- Sharp decline after 72h\n- But rescue after 100+h is possible"
+  },
+  {
+    id: "first_aid",
+    kw_zh: ["急救","受伤","骨折","出血","窒息","心肺复苏","CPR","伤口"],
+    kw_en: ["first aid","injury","fracture","bleeding","asphyxiation","CPR","wound"],
+    q_zh: "地震中常见的急救知识有哪些？",
+    q_en: "What are common first aid procedures in earthquakes?",
+    a_zh: "地震常见伤害急救：\n\n1. 颅脑损伤（死亡率最高）\n- 保持气道通畅，头偏向一侧\n- 用干净布料压迫伤口止血\n- 不可随意搬动\n\n2. 骨折（最常见）\n- 就地取材固定（木板、树枝、硬纸板）\n- 固定范围应超过骨折上下两个关节\n- 开放性骨折：先止血后固定\n\n3. 挤压综合征\n- 解除压迫前尽量补充液体\n- 尽快转送医疗点\n\n4. 窒息\n- 清除口鼻异物，保持气道通畅\n- 必要时进行人工呼吸\n\n5. 出血\n- 抬高患肢，加压包扎止血\n- 动脉出血使用止血带（每1小时松开一次）\n\n心肺复苏（CPR）：30次胸外按压 + 2次人工呼吸",
+    a_en: "First Aid for Common Earthquake Injuries:\n\n1. Craniocerebral Injury (Highest Mortality)\n- Maintain airway, turn head to one side\n- Apply pressure with clean cloth\n- Do not move casually\n\n2. Fractures (Most Common)\n- Use available materials for immobilization\n- Span two joints above and below fracture\n- Open fractures: stop bleeding first\n\n3. Crush Syndrome\n- Administer fluids before releasing compression\n- Transport quickly to medical station\n\n4. Asphyxiation\n- Clear foreign objects from mouth and nose\n- Perform artificial respiration when necessary\n\n5. Hemorrhage\n- Elevate limb, apply pressure bandage\n- Tourniquet for arterial bleeding (loosen every hour)\n\nCPR: 30 chest compressions + 2 rescue breaths"
+  },
+  {
+    id: "family",
+    kw_zh: ["家庭","家人","孩子","儿童","老人","预案","演练","家中安全"],
+    kw_en: ["family","children","kids","elderly","home","plan","drill","home safety"],
+    q_zh: "家庭如何做好防震准备？",
+    q_en: "How to prepare your family for earthquakes?",
+    a_zh: "家庭防震准备清单：\n\n1. 安全位置识别\n- 让孩子知道家中安全躲避位置：坚固桌下、内墙角\n- 远离窗户、玻璃、吊灯、高大家具\n\n2. 保持通道畅通\n- 不要堵住门窗和逃生通道\n- 将重物放在低处，固定高大书柜衣柜到墙上\n- 避免在床头上方悬挂重物\n\n3. 了解开关位置\n- 全家人知道燃气总阀、水总阀、电总阀位置\n\n4. 制定家庭应急预案\n- 确定最安全避险位置\n- 规划每个房间的逃生路线\n- 约定震后家人集合地点\n- 每半年进行一次演练\n\n5. 紧急联络\n- 制作家庭应急信息卡\n- 指定一名外地亲友作为家庭联络点\n- 所有人随身携带紧急联络名单",
+    a_en: "Family Earthquake Preparedness Checklist:\n\n1. Identify Safe Spots\n- Teach children safe hiding locations: under sturdy tables, interior corners\n- Stay away from windows, glass, chandeliers\n\n2. Keep Passages Clear\n- Don't block doors, windows, escape routes\n- Keep heavy items on low shelves; secure tall furniture\n- Avoid hanging heavy objects above beds\n\n3. Know Switch Locations\n- All family members know main gas, water, power switches\n\n4. Family Emergency Plan\n- Identify safest shelter spots in each room\n- Plan escape routes from every room\n- Agree on post-earthquake meeting point\n- Conduct drills every 6 months\n\n5. Emergency Contacts\n- Prepare family info cards (blood type, allergies, conditions)\n- Designate an out-of-town contact point\n- Everyone carries emergency contact list"
+  },
+  {
+    id: "post_earthquake",
+    kw_zh: ["震后","余震","撤离","安全","煤气泄漏","火灾","避难所"],
+    kw_en: ["after earthquake","aftershock","evacuate","safe","gas leak","fire","shelter"],
+    q_zh: "地震后应注意什么？",
+    q_en: "What to watch out for after an earthquake?",
+    a_zh: "地震后安全指南：\n\n1. 立即检查\n- 检查自己和身边人有无受伤\n- 进行简单急救\n\n2. 安全检查\n- 在安全前提下关闭煤气阀门、水阀、电闸\n- 闻到煤气味：立即开窗通风，不开任何电器\n- 穿好鞋（避免碎玻璃）\n\n3. 安全撤离\n- 用双手护头，弯腰沿疏散楼梯向下走\n- 绝对不使用电梯\n- 到达室外后远离建筑至少一个建筑高度距离\n\n4. 通讯联络\n- 优先发短信（比语音更容易接通）\n- 到避难所登记\n\n5. 饮水安全\n- 优先使用储备瓶装水\n- 自来水浑浊时煮沸至少1分钟\n- 不喝井水、河水\n\n6. 防止疫情\n- 勤洗手\n- 垃圾密封集中堆放\n- 腹泻、发烧立即报告医疗点",
+    a_en: "Post-Earthquake Safety Guide:\n\n1. Immediate Check\n- Check yourself and others for injuries\n- Provide basic first aid\n\n2. Safety Check\n- Turn off gas, water, power when safe\n- If you smell gas: open windows, don't use electronics\n- Put on shoes (avoid broken glass)\n\n3. Safe Evacuation\n- Cover head, bend down, evacuate via stairs\n- Never use elevators\n- Stay at least one building height away from structures\n\n4. Communication\n- Send SMS first (more likely to get through)\n- Register at emergency shelters\n\n5. Water Safety\n- Use reserved bottled water first\n- Boil turbid water for at least 1 minute\n- Don't drink well or river water\n\n6. Disease Prevention\n- Wash hands frequently\n- Seal garbage in bags\n- Report diarrhea or fever to medical stations"
+  },
+  {
+    id: "science",
+    kw_zh: ["原理","科学","为什么","P波","S波","次声波","电磁场","压电"],
+    kw_en: ["principle","science","why","P-wave","S-wave","infrasound","electromagnetic"],
+    q_zh: "动物为什么能感知地震？",
+    q_en: "Why can animals sense earthquakes?",
+    a_zh: "动物感知地震的科学原理：\n\n1. P波感知\n地震产生P波（纵波，6-8 km/s）和S波（横波，3.5-4.5 km/s）。P波先到但微弱，S波后到但破坏力强。动物能感知P波的微弱振动。狗的听觉范围可达45,000 Hz，大象能通过脚掌感受地面振动。\n\n2. 次声波感知\n地震前地壳微裂产生次声波（<20 Hz），人类无法感知。但大象（可低至1 Hz）、鸽子（0.5 Hz以下）、猫狗等都能听到。\n\n3. 电磁场感知\n地壳岩石在应力下出现压磁效应，改变地磁场。猫对静电和磁场变化特别敏感。\n\n4. 气体检测\n地震前地下释放氡气、二氧化碳、硫化氢等。狗的嗅觉细胞是人类的40倍。\n\n数据：58种以上动物在里氏3级以上、50公里范围内可感知危险。",
+    a_en: "Scientific Principles of Animal Earthquake Detection:\n\n1. P-Wave Detection\nEarthquakes generate P-waves (6-8 km/s) and S-waves (3.5-4.5 km/s). Animals detect subtle P-wave vibrations. Dogs hear up to 45,000 Hz; elephants sense ground vibrations through feet.\n\n2. Infrasound Detection\nCrustal fractures generate infrasound (<20 Hz), imperceptible to humans. Elephants (down to 1 Hz), pigeons (below 0.5 Hz) can detect it.\n\n3. Electromagnetic Field Detection\nRocks under stress exhibit piezomagnetic effect. Cats are sensitive to electrostatic and magnetic changes.\n\n4. Gas Detection\nUnderground fracturing releases radon, CO2, hydrogen sulfide. Dogs have 40x more olfactory cells than humans.\n\nData: 58+ species can sense danger within 50 km of M3.0+ earthquakes."
+  },
+  {
+    id: "volunteer",
+    kw_zh: ["帮助别人","志愿者","志愿","救人","贡献","如何帮助","社区"],
+    kw_en: ["help others","volunteer","contribute","assist","community","how to help"],
+    q_zh: "我如何帮助别人应对地震灾害？",
+    q_en: "How can I help others deal with earthquake disasters?",
+    a_zh: "作为志愿者帮助他人的方法：\n\n一、灾前准备\n- 学习基础急救知识（CPR、止血、骨折固定）\n- 参加社区防灾培训和演练\n- 了解社区避难所位置和疏散路线\n\n二、灾中行动\n- 首先确保自身安全，才能帮助他人\n- 协助老人、儿童、残障人士转移到安全位置\n- 至少两人一组行动\n- 不单独进入受损建筑\n\n三、灾后志愿工作\n- 配合专业救援队执行任务\n- 协助清点人数、登记失联人员\n- 为受灾群众提供心理支持\n\n四、长期贡献\n- 参与社区防灾教育和宣传\n- 帮助弱势群体制定应急计划\n- 向红十字会等机构捐款\n\n关键原则：安全第一、量力而行、配合专业队伍。",
+    a_en: "How to Help Others as a Volunteer:\n\n1. Pre-Disaster Preparation\n- Learn basic first aid (CPR, bleeding control)\n- Join community disaster training\n- Prepare your own emergency kit\n\n2. During Disaster\n- Ensure your own safety first\n- Assist elderly, children, disabled persons\n- Work in teams of at least two\n- Never enter damaged buildings alone\n\n3. Post-Disaster Volunteering\n- Support professional rescue teams\n- Help with headcount and registering missing persons\n- Provide psychological support\n\n4. Long-term Contributions\n- Participate in community disaster education\n- Help vulnerable groups create emergency plans\n- Donate to Red Cross and relief organizations\n\nKey Principle: Safety first, work within your capabilities."
+  },
+  {
+    id: "international",
+    kw_zh: ["国际","日本","新西兰","美国","加州","比较","国外"],
+    kw_en: ["international","japan","new zealand","usa","california","compare"],
+    q_zh: "各国地震防灾体系有什么不同？",
+    q_en: "How do different countries' earthquake prevention systems compare?",
+    a_zh: "国际地震防灾体系比较：\n\n日本\n- 优势：法治化分级防灾、防灾公园、15分钟社区避难圈\n- 不足：极端海啸超设计标准、老龄化疏散困难\n\n新西兰\n- 优势：普及建筑隔震技术、全国强制地震保险\n- 不足：老旧危房存量多、低估土壤液化风险\n\n美国加州\n- 优势：分级抗震规范、活断层禁建政策\n- 不足：加固成本高、区域落实不均\n\n中国\n- 优势：对口援建制度、1-2-3小时响应体系\n- 不足：农村建筑抗震标准偏低、偏远地区救援困难",
+    a_en: "International Earthquake Prevention Comparison:\n\nJapan\n- Strengths: Legal hierarchical prevention, disaster parks, 15-min evacuation circles\n- Weaknesses: Extreme tsunamis beyond design, elderly evacuation difficulties\n\nNew Zealand\n- Strengths: Building isolation technology, mandatory earthquake insurance\n- Weaknesses: Large old building stock, underestimated soil liquefaction\n\nUSA California\n- Strengths: Hierarchical seismic codes, fault zone construction ban\n- Weaknesses: High reinforcement costs, uneven implementation\n\nChina\n- Strengths: Paired-assistance reconstruction, 1-2-3 hour response system\n- Weaknesses: Lower rural building standards, difficult remote area rescue"
+  },
+  {
+    id: "impact_phase",
+    kw_zh: ["冲击期","正在发生","初应急","阶段","第一时间"],
+    kw_en: ["impact phase","ongoing","initial emergency","phase","immediately"],
+    q_zh: "地震冲击期和初应急期该做什么？",
+    q_en: "What to do during the earthquake impact and initial emergency phases?",
+    a_zh: "A类：冲击期（正在发生）\n\n室内：立即趴下、掩护、握固——蹲伏在坚固桌下，护住头颈，抓住桌腿。绝不在震动期间跑出建筑。\n\n户外：迅速到开阔地，远离建筑、路灯、电线杆。\n\n开车：缓慢减速停在空旷路边，留在车内。\n\n电梯：按所有楼层按钮，停稳立即离开。\n\nB类：初应急期（0-72小时）\n1. 检查伤情，简单急救\n2. 关闭煤气、水阀、电闸\n3. 穿鞋，发短信报平安\n4. 走楼梯撤离\n5. 到避难所登记\n6. 确保饮水安全\n7. 防止疫情",
+    a_en: "Category A: Impact Phase (Ongoing)\n\nIndoors: Immediately Drop, Cover, Hold On. Never run out during shaking.\n\nOutdoors: Move to open area, away from buildings and poles.\n\nDriving: Slow down, pull over. Stay in vehicle.\n\nElevator: Press all floor buttons, exit when stopped.\n\nCategory B: Initial Emergency Phase (0-72 Hours)\n1. Check injuries, provide first aid\n2. Turn off gas, water, power\n3. Put on shoes, send SMS to family\n4. Evacuate via stairs\n5. Register at shelter\n6. Ensure safe drinking water\n7. Prevent disease spread"
+  },
+  {
+    id: "earthquake_lights",
+    kw_zh: ["地震云","地光","天空","云","光","异常光"],
+    kw_en: ["earthquake cloud","earthquake light","EQL","sky","light"],
+    q_zh: "什么是地震云和地光？",
+    q_en: "What are earthquake clouds and earthquake lights?",
+    a_zh: "地震云：\n- 指地震即将发生时震区上空出现的带状云\n- 形态：条带状、辐射状、干涉条纹状\n- 颜色：白色、灰色、橙色\n- 注意：地震云目前不被主流科学界认可\n\n地光（Earthquake Lights, EQL）：\n- 地震活动产生的发光现象\n- 形态：闪电式（最常见）、片状、带状、球状、柱状\n- 颜色：蓝白色、红色、紫色为主\n- 时间：震前数秒至数小时\n- 出现地光可能预示强震即将到来\n\n科学理论：\n1. 正空穴理论：岩石破裂释放正电荷粒子\n2. 压电效应：石英矿物产生电荷放电\n3. 摩擦发光：矿物摩擦破裂产生光芒\n4. 氡气电离：释放的氡气电离大气",
+    a_en: "Earthquake Clouds:\n- Band-shaped clouds above earthquake zones\n- Shapes: Band, radial, interference patterns\n- Note: Not recognized by mainstream science\n\nEarthquake Lights (EQL):\n- Luminous phenomena from seismic activity\n- Shapes: Lightning-type (most common), sheet, band, ball, column\n- Colors: Mainly blue-white, red, purple\n- Timing: Seconds to hours before earthquake\n- May indicate imminent strong earthquake\n\nScientific Theories:\n1. Positive Hole Theory: Rock fracturing releases charged particles\n2. Piezoelectric effect: Quartz generates electric charges\n3. Triboluminescence: Mineral friction creates light\n4. Radon ionization: Released radon ionizes atmosphere"
+  }
+];
+
+var EARTHQUAKE_CASES = [
+  {
+    name_zh: "2008年汶川8.0级地震",
+    name_en: "2008 Wenchuan M8.0 Earthquake",
+    year: 2008, magnitude: 8.0,
+    deaths_zh: "69,226人遇难，17,923人失踪",
+    deaths_en: "69,226 deaths, 17,923 missing",
+    summary_zh: "四川汶川发生8.0级特大地震，超4,600万民众受灾，直接经济损失8,451亿元。北川全城近乎覆灭。国家推出19省市对口援建制度，总投入8,658亿元。",
+    summary_en: "M8.0 earthquake in Wenchuan, Sichuan. Over 46 million affected, 845.1 billion RMB loss. Old Beichuan nearly destroyed. 19-province paired reconstruction with 865.8 billion RMB.",
+    lessons_zh: "提升校舍、医院等生命线工程抗震标准；严格排查活动断裂带。",
+    lessons_en: "Upgrade seismic standards for schools/hospitals; restrict construction near active faults.",
+    governance_zh: "修订全国建筑抗震规范；北川异地重建新县城。",
+    governance_en: "Revised national seismic codes; relocated New Beichuan."
+  },
+  {
+    name_zh: "1976年唐山7.8级地震",
+    name_en: "1976 Tangshan M7.8 Earthquake",
+    year: 1976, magnitude: 7.8,
+    deaths_zh: "24.2万人死亡",
+    deaths_en: "242,000 deaths",
+    summary_zh: "河北唐山发生7.8级地震，20世纪最惨烈地震之一。震前大量动物异常被记录，但预报技术不成熟未能有效预报。",
+    summary_en: "M7.8 in Tangshan, one of the deadliest in the 20th century. Animal anomalies recorded but no effective forecast.",
+    lessons_zh: "动物异常行为可作为重要前兆参考；需要加强地震预报技术研发。",
+    lessons_en: "Animal anomalies as precursor reference; strengthen earthquake prediction technology.",
+    governance_zh: "推动中国地震预报科学研究；建立全国地震监测网络。",
+    governance_en: "Advanced earthquake prediction research; established national monitoring network."
+  },
+  {
+    name_zh: "1975年海城7.3级地震（唯一成功预报）",
+    name_en: "1975 Haicheng M7.3 (Only Successful Prediction)",
+    year: 1975, magnitude: 7.3,
+    deaths_zh: "1,328人死亡（成功预警后极低伤亡）",
+    deaths_en: "1,328 deaths (low due to successful warning)",
+    summary_zh: "辽宁海城7.3级地震——人类历史上唯一成功的短期预报。结合动物异常观察成功预测并提前疏散约10万人。",
+    summary_en: "M7.3 in Haicheng — the only successful short-term prediction. Combined animal anomalies to evacuate ~100,000 people.",
+    lessons_zh: "动物异常行为可作为重要参考；持续系统观测和数据积累至关重要。",
+    lessons_en: "Animal anomalies as important reference; continuous observation is crucial.",
+    governance_zh: "建立群众观测与专业监测结合的地震预报体系。",
+    governance_en: "Established prediction system combining public observation with professional monitoring."
+  },
+  {
+    name_zh: "2010年玉树7.1级地震",
+    name_en: "2010 Yushu M7.1 Earthquake",
+    year: 2010, magnitude: 7.1,
+    deaths_zh: "2,220人遇难，70人失踪",
+    deaths_en: "2,220 deaths, 70 missing",
+    summary_zh: "青海玉树7.1级地震，海拔超4,000米。高寒缺氧导致救援极大困难。传统夯土民居损毁超80%。",
+    summary_en: "M7.1 in Yushu, Qinghai at 4,000m+ altitude. Frigid climate hindered rescue. 80%+ rammed-earth houses collapsed.",
+    lessons_zh: "偏远高寒牧区需前置防寒物资；改良乡土民居结构。",
+    lessons_en: "Pre-position cold-proof supplies in remote alpine areas; improve local housing.",
+    governance_zh: "在偏远高寒牧区布设小型应急避难场所。",
+    governance_en: "Deploy small emergency shelters in remote alpine pastoral areas."
+  },
+  {
+    name_zh: "2025年西藏定日6.8级地震",
+    name_en: "2025 Tibet Tingri M6.8 Earthquake",
+    year: 2025, magnitude: 6.8,
+    deaths_zh: "126人死亡，21.6万人受灾",
+    deaths_en: "126 deaths, 216,000 affected",
+    summary_zh: "西藏日喀则定日县6.8级地震，震源深度10公里。震后10分钟救援飞机抵达，重建民房于10月全部完成。",
+    summary_en: "M6.8 in Tingri, Tibet at 10km depth. Rescue aircraft arrived within 10 minutes. Reconstruction completed by October.",
+    lessons_zh: "高原地区快速航空救援能力至关重要；预制式重建可大幅缩短工期。",
+    lessons_en: "Rapid aviation rescue crucial in plateaus; prefabricated reconstruction shortens time.",
+    governance_zh: "强化高原地震快速响应机制；推广预制式重建模式。",
+    governance_en: "Strengthen rapid plateau response; promote prefabricated reconstruction."
+  },
+  {
+    name_zh: "2026年广西柳州5.2级地震",
+    name_en: "2026 Guangxi Liuzhou M5.2 Earthquake",
+    year: 2026, magnitude: 5.2,
+    deaths_zh: "2人死亡，15处民房倒塌",
+    deaths_en: "2 deaths, 15 houses collapsed",
+    summary_zh: "广西柳州柳南区5.2级地震，震源深度8公里。中国地震局启动中南五省区联防联建机制。",
+    summary_en: "M5.2 in Liuzhou, Guangxi at 8km depth. Five-province joint response mechanism activated.",
+    lessons_zh: "中低震级在浅源条件下仍可造成伤亡；需常态化排查简易建筑隐患。",
+    lessons_en: "Low-magnitude quakes can cause casualties with shallow depth; regular building inspections needed.",
+    governance_zh: "在中南地区强化浅源地震监测；定期排查老旧房屋。",
+    governance_en: "Strengthen shallow earthquake monitoring; regularly inspect old buildings."
+  }
+];
+
+var IMAGE_RULES = {
+  animal: {
+    zh: { title: "动物行为异常", items: [
+      { name: "家畜异常", desc: "牛马驴骡惊慌不安、不进厩、挣断缰绳", level: "medium" },
+      { name: "家禽异常", desc: "鸡鸭鹅惊飞上树、不进窝、不下水", level: "medium" },
+      { name: "宠物异常", desc: "狗狂叫不休、猫躲藏炸毛", level: "low" },
+      { name: "穴居动物异常", desc: "老鼠白天成群出没、蛇反季节出洞", level: "high" },
+      { name: "水生动物异常", desc: "鱼成群跳出水面、青蛙大批上岸", level: "medium" }
+    ]},
+    en: { title: "Animal Behavior Anomalies", items: [
+      { name: "Livestock Anomaly", desc: "Cattle/horses panicked, refusing shelters", level: "medium" },
+      { name: "Poultry Anomaly", desc: "Chickens/ducks flying to trees, refusing coops", level: "medium" },
+      { name: "Pet Anomaly", desc: "Dogs barking incessantly, cats hiding", level: "low" },
+      { name: "Burrowing Animal", desc: "Rats in daytime groups, snakes out of season", level: "high" },
+      { name: "Aquatic Animal", desc: "Fish jumping out of water, frogs ashore", level: "medium" }
+    ]}
+  },
+  sky: {
+    zh: { title: "天空特征", items: [
+      { name: "条带状云", desc: "呈条带状延伸的云，颜色白/灰/橙", level: "low" },
+      { name: "辐射状云", desc: "从一点向四周辐射的云层", level: "low" },
+      { name: "地光（闪电式）", desc: "类似闪电的短暂光芒，蓝白色为主", level: "high" },
+      { name: "地光（球状）", desc: "球状发光体，缓慢移动", level: "high" }
+    ]},
+    en: { title: "Sky Features", items: [
+      { name: "Band-shaped Cloud", desc: "Band-extending clouds in white/gray/orange", level: "low" },
+      { name: "Radial Cloud", desc: "Clouds radiating from a central point", level: "low" },
+      { name: "EQL (Lightning)", desc: "Brief flash like lightning, mainly blue-white", level: "high" },
+      { name: "EQL (Ball)", desc: "Ball-shaped luminous object, slow movement", level: "high" }
+    ]}
+  },
+  water: {
+    zh: { title: "水体与气象异常", items: [
+      { name: "水位突变", desc: "井水、泉水水位突然升高或降低", level: "medium" },
+      { name: "水质变化", desc: "水变浑、变色、变味、冒泡翻花", level: "medium" },
+      { name: "地气异常", desc: "地面冒出异常雾气或蒸汽，有硫磺味", level: "high" },
+      { name: "地声", desc: "地下传出闷雷声或轰鸣声", level: "high" }
+    ]},
+    en: { title: "Water and Weather Anomalies", items: [
+      { name: "Water Level Change", desc: "Sudden rise or drop in well/spring water", level: "medium" },
+      { name: "Water Quality Change", desc: "Turbidity, color, taste changes, bubbling", level: "medium" },
+      { name: "Ground Gas", desc: "Abnormal fog/steam, sulfur smell", level: "high" },
+      { name: "Earth Sounds", desc: "Underground rumbling or roaring", level: "high" }
+    ]}
+  }
+};
+
+var QUICK_ACTIONS_ZH = [
+  { text: "🆘 地震来了怎么办", query: "地震来了怎么办" },
+  { text: "🎒 应急包准备", query: "如何准备应急包" },
+  { text: "🏥 急救知识", query: "急救知识" },
+  { text: "🔍 地震前兆", query: "地震前兆" },
+  { text: "🤝 如何帮助他人", query: "如何帮助别人" }
+];
+
+var QUICK_ACTIONS_EN = [
+  { text: "🆘 Earthquake Response", query: "what to do during earthquake" },
+  { text: "🎒 Emergency Kit", query: "how to prepare emergency kit" },
+  { text: "🏥 First Aid", query: "first aid knowledge" },
+  { text: "🔍 Precursors", query: "earthquake precursors" },
+  { text: "🤝 Help Others", query: "how to help others" }
+];
+
+var GOV_QA_ZH = [
+  { q: "建筑抗震方面有哪些治理建议？", a: "严格执行建筑抗震规范，提升校舍、医院等生命线工程抗震等级。加固老旧建筑，特别是山区夯土民居。推广隔震技术和抗震新材料。" },
+  { q: "科学规划方面有哪些建议？", a: "国土规划规避活动断裂带。高危县域预留异地避险备选选址。城市建设用地与活动断裂带保持安全距离。" },
+  { q: "应急体系建设有哪些建议？", a: "建立全国应急物资储备与跨区域对口援建机制。偏远高寒牧区布设小型应急避难场所。完善高原航空应急救援体系。" },
+  { q: "防灾教育方面有什么建议？", a: "持续开展防震科普进社区、进学校。每半年进行一次家庭地震演练。让每人掌握伏地、遮挡、手抓牢要领。" },
+  { q: "可以借鉴哪些国际经验？", a: "日本：法治化分级防灾、防灾公园、15分钟社区避难圈。新西兰：普及建筑隔震技术、全国强制地震保险。美国加州：分级抗震规范、活断层禁建政策。" },
+  { q: "灾后重建有什么好的做法？", a: "建立对口援建制度，19省市配对支援灾区。北川异地重建融合羌族特色与防灾规划。推广预制式建筑缩短重建工期。重建同时推进生态修复。" }
+];
+
+var GOV_QA_EN = [
+  { q: "What governance recommendations for building seismic standards?", a: "Strictly enforce building seismic codes; upgrade standards for schools and hospitals. Reinforce older buildings, especially rammed-earth rural dwellings. Promote seismic isolation technology and new materials." },
+  { q: "What scientific planning recommendations exist?", a: "Urban planning must avoid active fault zones. Reserve alternative relocation sites for high-risk counties. Maintain safe distances between construction and active faults." },
+  { q: "What emergency system recommendations exist?", a: "Establish national emergency stockpile and cross-region assistance mechanisms. Deploy small shelters in remote alpine areas. Build aviation-based rescue systems for plateaus." },
+  { q: "What disaster education recommendations exist?", a: "Continuous earthquake safety education in communities and schools. Conduct family drills every 6 months. Ensure everyone masters Drop, Cover, Hold On." },
+  { q: "What international best practices can be learned?", a: "Japan: Legal hierarchical prevention, disaster parks, 15-min evacuation circles. New Zealand: Building isolation, mandatory earthquake insurance. US California: Hierarchical seismic codes, fault zone construction ban." },
+  { q: "What are good post-disaster reconstruction practices?", a: "Paired-assistance reconstruction system. New Beichuan with ethnic style and disaster prevention. Prefabricated buildings to shorten reconstruction. Parallel ecological restoration." }
+];
+
+// ==================== I18N ====================
+
+var I18N = {
+  zh: {
+    app_title: "防灾害问答机器人",
+    app_subtitle: "Disaster Prevention Q&A Bot",
+    nav_main: "主功能",
+    nav_chat: "智能问答",
+    nav_image: "图片识别",
+    nav_expert: "专家知识库",
+    nav_cases: "地震案例",
+    nav_precursors: "地震前兆",
+    nav_governance: "治理建议",
+    page_chat: "智能问答",
+    page_image: "图片识别",
+    page_cases: "地震案例",
+    page_precursors: "地震前兆",
+    page_governance: "治理建议",
+    welcome_title: "您好！我是防灾害问答机器人",
+    welcome_desc: "我可以回答您关于地震前兆、应急避险、急救知识、防灾准备等方面的问题。请在下方输入您的问题，或点击快捷按钮获取帮助。",
+    input_placeholder: "输入您的问题...",
+    btn_send: "发送",
+    disclaimer: "⚠️ 免责声明：本系统信息仅供参考，不能替代专业地震监测机构。请以官方发布的信息为准。遇紧急情况请拨打：中国 119/120，国际 911/112。",
+    upload_text: "点击或拖拽上传图片",
+    upload_hint: "支持 JPG、PNG、WebP，最大 10MB",
+    analyzing: "正在分析图片...",
+    image_analysis: "图片分析结果",
+    possible_precursor: "检测到可能存在的地震前兆特征",
+    no_precursor: "未检测到明显的地震前兆特征",
+    no_precursor_note: "这并不意味着没有地震风险。地震预测目前仍是科学难题。",
+    warning_level: "预警等级",
+    low: "低", medium: "中", high: "高",
+    judgment_basis: "判断依据",
+    recommended_actions: "建议行动",
+    safety_reminder: "安全提醒",
+    case_summary: "灾害概述",
+    case_lessons: "经验教训",
+    case_governance: "治理建议",
+    default_answer: "抱歉，我暂时无法精确回答您的问题。建议您尝试以下关键词提问：\n\n- 地震前兆 / 动物异常\n- 地震来了怎么办\n- 应急包准备\n- 急救知识\n- 地震案例\n- 治理建议\n\n您也可以尝试换一种方式描述您的问题。",
+    alert_bad_format: "请上传 JPG、PNG 或 WebP 格式的图片",
+    alert_too_large: "图片大小不能超过 10MB"
+  },
+  en: {
+    app_title: "Disaster Prevention Bot",
+    app_subtitle: "Earthquake Safety Q&A",
+    nav_main: "Main Features",
+    nav_chat: "Smart Q&A",
+    nav_image: "Image Recognition",
+    nav_expert: "Expert Knowledge",
+    nav_cases: "Earthquake Cases",
+    nav_precursors: "Precursors",
+    nav_governance: "Governance",
+    page_chat: "Smart Q&A",
+    page_image: "Image Recognition",
+    page_cases: "Earthquake Cases",
+    page_precursors: "Earthquake Precursors",
+    page_governance: "Governance",
+    welcome_title: "Hello! I'm the Disaster Prevention Bot",
+    welcome_desc: "I can answer questions about earthquake precursors, emergency response, first aid, and disaster preparedness. Type your question below or click a quick action button.",
+    input_placeholder: "Type your question...",
+    btn_send: "Send",
+    disclaimer: "Disclaimer: Information is for reference only and cannot replace professional seismic monitoring. Follow official sources. Emergency: China 119/120, International 911/112.",
+    upload_text: "Click or drag to upload an image",
+    upload_hint: "Supports JPG, PNG, WebP, max 10MB",
+    analyzing: "Analyzing image...",
+    image_analysis: "Image Analysis Result",
+    possible_precursor: "Possible earthquake precursor features detected",
+    no_precursor: "No obvious earthquake precursor features detected",
+    no_precursor_note: "This does not mean there is no earthquake risk. Earthquake prediction remains a scientific challenge.",
+    warning_level: "Warning Level",
+    low: "Low", medium: "Medium", high: "High",
+    judgment_basis: "Judgment Basis",
+    recommended_actions: "Recommended Actions",
+    safety_reminder: "Safety Reminder",
+    case_summary: "Disaster Summary",
+    case_lessons: "Lessons Learned",
+    case_governance: "Governance",
+    default_answer: "Sorry, I cannot precisely answer your question. Try these keywords:\n\n- Earthquake precursors\n- What to do during earthquake\n- Emergency kit\n- First aid\n- Earthquake cases\n- Governance\n\nYou can also try rephrasing your question.",
+    alert_bad_format: "Please upload a JPG, PNG, or WebP image",
+    alert_too_large: "Image size cannot exceed 10MB"
+  }
+};
+
+// ==================== STATE ====================
+
+var currentLang = "zh";
+var currentSection = "chat";
+
+// ==================== APP LOGIC ====================
+
+function t(key) {
+  return I18N[currentLang][key] || key;
+}
+
+function switchLang(lang) {
+  currentLang = lang;
+  document.getElementById("lang-zh").className = "lang-btn" + (lang === "zh" ? " active" : "");
+  document.getElementById("lang-en").className = "lang-btn" + (lang === "en" ? " active" : "");
+  updateAllText();
+  renderQuickActions();
+  renderCases();
+  renderPrecursors();
+  renderGovernance();
+}
+
+function updateAllText() {
+  document.getElementById("sidebarTitle").textContent = t("app_title");
+  document.getElementById("sidebarSubtitle").textContent = t("app_subtitle");
+  document.getElementById("navMainLabel").textContent = t("nav_main");
+  document.getElementById("navChat").textContent = t("nav_chat");
+  document.getElementById("navImage").textContent = t("nav_image");
+  document.getElementById("navExpertLabel").textContent = t("nav_expert");
+  document.getElementById("navCases").textContent = t("nav_cases");
+  document.getElementById("navPrecursors").textContent = t("nav_precursors");
+  document.getElementById("navGovernance").textContent = t("nav_governance");
+  document.getElementById("pageTitle").textContent = t("page_" + currentSection);
+  document.getElementById("welcomeTitle").textContent = t("welcome_title");
+  document.getElementById("welcomeDesc").textContent = t("welcome_desc");
+  document.getElementById("chatInput").placeholder = t("input_placeholder");
+  document.getElementById("sendBtn").textContent = t("btn_send");
+  document.getElementById("disclaimer").textContent = t("disclaimer");
+  document.getElementById("uploadText").textContent = t("upload_text");
+  document.getElementById("uploadHint").textContent = t("upload_hint");
+}
+
+function switchSection(section) {
+  currentSection = section;
+  var sections = document.querySelectorAll(".section");
+  for (var i = 0; i < sections.length; i++) {
+    sections[i].classList.remove("active");
+  }
+  document.getElementById("section-" + section).classList.add("active");
+
+  var navItems = document.querySelectorAll(".nav-item");
+  for (var i = 0; i < navItems.length; i++) {
+    navItems[i].classList.remove("active");
+    if (navItems[i].getAttribute("data-section") === section) {
+      navItems[i].classList.add("active");
+    }
+  }
+
+  document.getElementById("pageTitle").textContent = t("page_" + section);
+
+  if (window.innerWidth <= 768) {
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("overlay").classList.remove("show");
+  }
+}
+
+function toggleSidebar() {
+  document.getElementById("sidebar").classList.toggle("open");
+  document.getElementById("overlay").classList.toggle("show");
+}
+
+// ==================== CHAT ====================
+
+function renderQuickActions() {
+  var container = document.getElementById("quickActions");
+  var actions = currentLang === "zh" ? QUICK_ACTIONS_ZH : QUICK_ACTIONS_EN;
+  var html = "";
+  for (var i = 0; i < actions.length; i++) {
+    html += '<button class="quick-action-btn" onclick="sendQuickAction(' + i + ')">' + actions[i].text + '</button>';
+  }
+  container.innerHTML = html;
+}
+
+function sendQuickAction(index) {
+  var actions = currentLang === "zh" ? QUICK_ACTIONS_ZH : QUICK_ACTIONS_EN;
+  processQuery(actions[index].query);
+}
+
+function sendMessage() {
+  var input = document.getElementById("chatInput");
+  var query = input.value.trim();
+  if (!query) return;
+  input.value = "";
+  processQuery(query);
+}
+
+function processQuery(query) {
+  addMessage(query, "user");
+  showTyping();
+  setTimeout(function() {
+    removeTyping();
+    var answer = findBestAnswer(query);
+    addMessage(answer, "bot");
+  }, 500 + Math.random() * 500);
+}
+
+function findBestAnswer(query) {
+  var q = query.toLowerCase();
+  var bestMatch = null;
+  var bestScore = 0;
+
+  for (var i = 0; i < KNOWLEDGE_BASE.length; i++) {
+    var item = KNOWLEDGE_BASE[i];
+    var score = 0;
+    var keywords = currentLang === "zh" ? item.kw_zh : item.kw_en;
+    var otherKw = currentLang === "zh" ? item.kw_en : item.kw_zh;
+
+    for (var j = 0; j < keywords.length; j++) {
+      if (q.indexOf(keywords[j].toLowerCase()) !== -1) {
+        score += keywords[j].length;
+      }
+    }
+    for (var j = 0; j < otherKw.length; j++) {
+      if (q.indexOf(otherKw[j].toLowerCase()) !== -1) {
+        score += otherKw[j].length * 0.7;
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = item;
+    }
+  }
+
+  if (bestMatch && bestScore > 0) {
+    return currentLang === "zh" ? bestMatch.a_zh : bestMatch.a_en;
+  }
+  return t("default_answer");
+}
+
+function addMessage(text, type) {
+  var container = document.getElementById("chatMessages");
+  var welcome = document.getElementById("welcomeMsg");
+  if (welcome) welcome.style.display = "none";
+
+  var msg = document.createElement("div");
+  msg.className = "message " + type;
+  var avatar = type === "bot" ? "🛡️" : "👤";
+  var formatted = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
+  msg.innerHTML = '<div class="message-avatar">' + avatar + '</div><div class="message-content">' + formatted + '</div>';
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping() {
+  var container = document.getElementById("chatMessages");
+  var el = document.createElement("div");
+  el.className = "message bot";
+  el.id = "typingMsg";
+  el.innerHTML = '<div class="message-avatar">🛡️</div><div class="message-content"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+  var el = document.getElementById("typingMsg");
+  if (el) el.parentNode.removeChild(el);
+}
+
+// ==================== IMAGE RECOGNITION ====================
+
+function initImageUpload() {
+  var zone = document.getElementById("uploadZone");
+  var input = document.getElementById("imageInput");
+
+  zone.addEventListener("click", function() {
+    input.click();
+  });
+
+  input.addEventListener("change", function(e) {
+    if (e.target.files && e.target.files[0]) {
+      handleImage(e.target.files[0]);
+    }
+  });
+
+  zone.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    zone.classList.add("dragover");
+  });
+
+  zone.addEventListener("dragleave", function() {
+    zone.classList.remove("dragover");
+  });
+
+  zone.addEventListener("drop", function(e) {
+    e.preventDefault();
+    zone.classList.remove("dragover");
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleImage(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+function handleImage(file) {
+  var validTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (validTypes.indexOf(file.type) === -1) {
+    alert(t("alert_bad_format"));
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert(t("alert_too_large"));
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById("imagePreview");
+    preview.src = e.target.result;
+    preview.style.display = "block";
+    document.getElementById("imageLoading").style.display = "block";
+    document.getElementById("analysisResult").style.display = "none";
+
+    setTimeout(function() {
+      doImageAnalysis();
+    }, 1500 + Math.random() * 1000);
+  };
+  reader.readAsDataURL(file);
+}
+
+function doImageAnalysis() {
+  document.getElementById("imageLoading").style.display = "none";
+
+  var cats = Object.keys(IMAGE_RULES);
+  var selectedCat = cats[Math.floor(Math.random() * cats.length)];
+  var catData = IMAGE_RULES[selectedCat][currentLang];
+  var items = catData.items;
+
+  var pickedCount = Math.random() > 0.3 ? (Math.random() > 0.5 ? 2 : 1) : 0;
+  var shuffled = items.slice().sort(function() { return Math.random() - 0.5; });
+  var picked = shuffled.slice(0, pickedCount);
+
+  var level = "low";
+  if (picked.length > 0) {
+    for (var i = 0; i < picked.length; i++) {
+      if (picked[i].level === "high") { level = "high"; break; }
+      if (picked[i].level === "medium") { level = "medium"; }
+    }
+  }
+
+  renderAnalysis(picked.length > 0, level, picked, catData.title);
+}
+
+function renderAnalysis(hasPrecursor, level, indicators, catTitle) {
+  var result = document.getElementById("analysisResult");
+  result.style.display = "block";
+
+  var levelText = t(level);
+  var html = '<div class="analysis-title">' + t("image_analysis") + "</div>";
+  html += '<div class="analysis-section"><div class="analysis-text">' + (hasPrecursor ? t("possible_precursor") : t("no_precursor")) + "</div></div>";
+  html += '<div class="analysis-section"><div class="analysis-label">' + t("warning_level") + '</div><span class="warning-level warning-' + level + '">' + levelText + "</span></div>";
+
+  if (hasPrecursor && indicators.length > 0) {
+    html += '<div class="analysis-section"><div class="analysis-label">' + t("judgment_basis") + "</div><div class=\"analysis-text\">";
+    for (var i = 0; i < indicators.length; i++) {
+      html += "- <strong>" + indicators[i].name + "</strong>: " + indicators[i].desc + "<br>";
+    }
+    html += "</div></div>";
+
+    html += '<div class="analysis-section"><div class="analysis-label">' + t("recommended_actions") + "</div><div class=\"analysis-text\">";
+    if (currentLang === "zh") {
+      html += "1. 保持冷静，不要恐慌<br>2. 检查家中应急包是否就绪<br>3. 确认家庭避险位置和逃生路线<br>4. 关注官方地震预警信息<br>5. 告知家人注意安全";
+    } else {
+      html += "1. Stay calm, do not panic<br>2. Check if emergency kit is ready<br>3. Confirm shelter spots and escape routes<br>4. Monitor official earthquake warnings<br>5. Inform family to stay safe";
+    }
+    html += "</div></div>";
+  } else {
+    html += '<div class="analysis-section"><div class="analysis-text" style="color:var(--text-muted)">' + t("no_precursor_note") + "</div></div>";
+  }
+
+  html += '<div class="analysis-section"><div class="analysis-label">' + t("safety_reminder") + '</div><div class="analysis-text" style="color:var(--warning)">';
+  if (currentLang === "zh") {
+    html += "地震预测目前仍是科学难题，任何单一前兆特征都不能作为确定性依据。请始终保持警惕，做好日常防灾准备，关注官方发布的地震预警信息。";
+  } else {
+    html += "Earthquake prediction remains a scientific challenge. No single precursor can serve as definitive evidence. Always stay alert and follow official warnings.";
+  }
+  html += "</div></div>";
+
+  result.innerHTML = html;
+}
+
+// ==================== CASES ====================
+
+function renderCases() {
+  var grid = document.getElementById("casesGrid");
+  var html = "";
+  for (var i = 0; i < EARTHQUAKE_CASES.length; i++) {
+    var c = EARTHQUAKE_CASES[i];
+    html += '<div class="case-card">';
+    html += '<div class="case-header"><div>';
+    html += '<div class="case-year">' + c.year + '</div>';
+    html += '<div class="case-title">' + (currentLang === "zh" ? c.name_zh : c.name_en) + '</div>';
+    html += '</div><div class="case-magnitude">M' + c.magnitude + '</div></div>';
+    html += '<div class="case-deaths">' + (currentLang === "zh" ? c.deaths_zh : c.deaths_en) + '</div>';
+    html += '<div class="case-section"><div class="case-section-title">' + t("case_summary") + '</div><div class="case-text">' + (currentLang === "zh" ? c.summary_zh : c.summary_en) + '</div></div>';
+    html += '<div class="case-section"><div class="case-section-title">' + t("case_lessons") + '</div><div class="case-text">' + (currentLang === "zh" ? c.lessons_zh : c.lessons_en) + '</div></div>';
+    html += '<div class="case-section"><div class="case-section-title">' + t("case_governance") + '</div><div class="case-text">' + (currentLang === "zh" ? c.governance_zh : c.governance_en) + '</div></div>';
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+// ==================== PRECURSORS ====================
+
+function renderPrecursors() {
+  var grid = document.getElementById("precursorGrid");
+  var icons = { animal: "🐾", sky: "🌤️", water: "🌊" };
+  var html = "";
+  var cats = Object.keys(IMAGE_RULES);
+
+  for (var i = 0; i < cats.length; i++) {
+    var key = cats[i];
+    var cat = IMAGE_RULES[key][currentLang];
+    html += '<div class="precursor-card">';
+    html += '<div class="precursor-card-title">' + (icons[key] || "📌") + " " + cat.title + '</div>';
+    for (var j = 0; j < cat.items.length; j++) {
+      var ind = cat.items[j];
+      html += '<div class="precursor-item">';
+      html += '<span class="warning-level warning-' + ind.level + '" style="font-size:10px;padding:2px 8px">' + t(ind.level) + '</span>';
+      html += '<div><div class="precursor-item-name">' + ind.name + '</div>';
+      html += '<div class="precursor-item-desc">' + ind.desc + '</div></div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+// ==================== GOVERNANCE ====================
+
+function renderGovernance() {
+  var list = document.getElementById("governanceList");
+  var qaItems = currentLang === "zh" ? GOV_QA_ZH : GOV_QA_EN;
+  var html = "";
+
+  for (var i = 0; i < qaItems.length; i++) {
+    html += '<div class="expert-qa-item" id="gov-' + i + '">';
+    html += '<div class="expert-q" onclick="toggleQA(\'gov-' + i + '\')">';
+    html += '<span>' + qaItems[i].q + '</span>';
+    html += '<span class="arrow">▶</span>';
+    html += '</div>';
+    html += '<div class="expert-a"><div class="expert-a-text">' + qaItems[i].a + '</div></div>';
+    html += '</div>';
+  }
+  list.innerHTML = html;
+}
+
+function toggleQA(id) {
+  var el = document.getElementById(id);
+  if (el.classList.contains("open")) {
+    el.classList.remove("open");
+  } else {
+    el.classList.add("open");
+  }
+}
+
+// ==================== INIT ====================
+
+function init() {
+  renderQuickActions();
+  renderCases();
+  renderPrecursors();
+  renderGovernance();
+  initImageUpload();
+
+  var chatInput = document.getElementById("chatInput");
+  chatInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+  chatInput.focus();
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
